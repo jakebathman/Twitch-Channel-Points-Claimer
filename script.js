@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitch Channel Points Claimer
-// @version 2.2
+// @version 2.3
 // @author JakeBathman
 // @description Automatically claim channel points. Based on original script by PartMent
 // @match https://www.twitch.tv/*
@@ -126,7 +126,7 @@ function getTimeSinceSpecialBonus() {
     let diffMinutes = (nextSpecialBonus - new Date()) / 1000 / 60;
 
     if (diffMinutes < 1) {
-        return Math.round(diffMinutes * 60) + 's';
+        return '<1m';
     }
 
     return Math.round(diffMinutes) + 'm';
