@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitch Channel Points Claimer
-// @version 2.0
+// @version 2.1
 // @author JakeBathman
 // @description Automatically claim channel points. Based on original script by PartMent
 // @match https://www.twitch.tv/*
@@ -24,6 +24,8 @@ let localStorageKeyGlobal = `autoClaimer_count_global`;
 
 let claimCount = localStorageGet(localStorageKey);
 let claimCountGlobal = getGlobalCount();
+
+let lastSpecialBonus;
 
 console.log('############ Global count: ', claimCountGlobal);
 
@@ -54,8 +56,12 @@ function addCountEl() {
     }
 }
 addCountEl();
+setInterval(updateCountHtml, 1000);
 
-if (MutationObserver) console.log('Auto claimer is enabled.');
+if (MutationObserver) {
+    console.log('Auto claimer is enabled.');
+}
+
 let observer = new MutationObserver((e) => {
     try {
         let bonus = document.querySelector('.claimable-bonus__icon');
@@ -64,12 +70,10 @@ let observer = new MutationObserver((e) => {
             bonus.click();
             claiming = true;
 
+            lastSpecialBonus = new Date();
+
             claimCount = localStorageInc(localStorageKey);
             claimCountGlobal = localStorageInc(localStorageKeyGlobal);
-
-            // Update counter
-            var countEl = document.querySelector('.autoClaimer_count');
-            countEl.innerHTML = getCountHtml();
 
             // After a second or so, revert the claimed status back
             // to false to keep waiting for the next button
@@ -86,8 +90,32 @@ let observer = new MutationObserver((e) => {
 
 observer.observe(document.body, { childList: true, subtree: true });
 
+function updateCountHtml() {
+    var countEl = document.querySelector('.autoClaimer_count');
+    countEl.innerHTML = getCountHtml();
+}
+
 function getCountHtml() {
-    return `<div style="padding-right: 4px;font-weight:bold;">${claimCount}</div> <div>(${claimCountGlobal})</div>`;
+    return `<div style="padding-right: 4px;">${getTimeSinceSpecialBonus()}</div><div style="padding-right: 4px;">•</div> <div style="padding-right: 4px;font-weight:bold;">${claimCount}</div> <div>(${claimCountGlobal})</div>`;
+}
+
+function getTimeSinceSpecialBonus() {
+    if (!lastSpecialBonus) {
+        return '?m';
+    }
+
+    let nextSpecialBonus = addMinutes(lastSpecialBonus, 15);
+    let diffMinutes = (nextSpecialBonus - new Date()) / 1000 / 60;
+
+    if (diffMinutes < 1) {
+        return Math.round(diffMinutes * 60) + 's';
+    }
+
+    return Math.round(diffMinutes) + 'm';
+}
+
+function addMinutes(date, minutes) {
+    return new Date(date.getTime() + minutes * 60000);
 }
 
 function localStorageGet(key) {
