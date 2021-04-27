@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitch Channel Points Claimer
-// @version 2.1
+// @version 2.2
 // @author JakeBathman
 // @description Automatically claim channel points. Based on original script by PartMent
 // @match https://www.twitch.tv/*
@@ -21,6 +21,7 @@ let channelName =
     ) || '';
 let localStorageKey = `autoClaimer_count_${channelName}`;
 let localStorageKeyGlobal = `autoClaimer_count_global`;
+let localStorageKeyLastSpecialBonus = `autoClaimer_lastSpecialBonus_${channelName}`;
 
 let claimCount = localStorageGet(localStorageKey);
 let claimCountGlobal = getGlobalCount();
@@ -56,6 +57,19 @@ function addCountEl() {
     }
 }
 addCountEl();
+
+// Try to load the last bonus time from localStorage (prevents ?m on refresh)
+if (localStorage.hasOwnProperty(localStorageKeyLastSpecialBonus)) {
+    var storedLastSpecialBonus = new Date(parseInt(
+        localStorage.getItem(localStorageKeyLastSpecialBonus)
+    ));
+    if ((new Date() - storedLastSpecialBonus) / (1000 * 60) > 15) {
+        // This is an old one, so nuke it from localStorage
+        localStorage.removeItem(localStorageKeyLastSpecialBonus);
+    } else {
+        lastSpecialBonus = storedLastSpecialBonus;
+    }
+}
 setInterval(updateCountHtml, 1000);
 
 if (MutationObserver) {
@@ -71,6 +85,10 @@ let observer = new MutationObserver((e) => {
             claiming = true;
 
             lastSpecialBonus = new Date();
+            localStorage.setItem(
+                localStorageKeyLastSpecialBonus,
+                lastSpecialBonus.getTime()
+            );
 
             claimCount = localStorageInc(localStorageKey);
             claimCountGlobal = localStorageInc(localStorageKeyGlobal);
@@ -96,7 +114,7 @@ function updateCountHtml() {
 }
 
 function getCountHtml() {
-    return `<div style="padding-right: 4px;">${getTimeSinceSpecialBonus()}</div><div style="padding-right: 4px;">•</div> <div style="padding-right: 4px;font-weight:bold;">${claimCount}</div> <div>(${claimCountGlobal})</div>`;
+    return `<div style="padding-right: 4px;font-weight:bold;">${getTimeSinceSpecialBonus()}</div><div style="padding-right: 4px;">•</div> <div style="padding-right: 4px;">${claimCount}</div> <div>(${claimCountGlobal})</div>`;
 }
 
 function getTimeSinceSpecialBonus() {
